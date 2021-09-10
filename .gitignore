@@ -5,6 +5,8 @@ __pycache__/
 
 # C extensions
 *.so
+acs_5yr_merged.csv
+
 
 # Distribution / packaging
 .Python
