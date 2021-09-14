@@ -7,6 +7,8 @@ __pycache__/
 *.so
 acs_5yr_merged.csv
 
+acs_5yr_merged_v3.csv
+
 
 # Distribution / packaging
 .Python
