@@ -1,0 +1,76 @@
+---
+title: "R_01_Testing_Hierarchichal"
+author: "Oren"
+date: "9/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(fable)
+library(tsibble)
+library(dplyr)
+library(tidyverse)
+library(reshape2)
+library(ggplot2)
+library(plotly)
+library(lubridate)
+```
+
+
+```{r}
+zri_df_og <-read_csv("../../data/HIER_zri_multifamily_v2.csv")
+```
+
+```{r}
+zri_df <- select(zri_df_og, -c('SizeRank', 'Metro')) 
+
+zri_df <- drop_na(zri_df)
+
+zri_df_melted <- melt(zri_df, id.vars = c('zip', 'City', 'State',  'CountyName'))
+zri_df_melted
+
+zri_df_full <-zri_df_melted %>%
+   mutate(date=ym(variable)) %>% select(-variable) %>% rename(avg_rent = value)
+
+```
+
+
+
+```{r}
+zri_CA <- zri_df_full %>%
+  filter(State == "CA")
+zri_CA %>%
+  group_by(City) %>%  slice(1)
+
+```
+
+```{r}
+zri_CA <- as_tibble(zri_CA)
+zri_CA %>%
+  ggplot2::autoplot(avg_rent)
+
+
+ggplot(data = zri_CA, aes(x = date, y = avg_rent)) +
+ geom_line(aes(color = CountyName), size = 1)
+```
+
+
+```{r}
+qplot(variable, value, data = zri_CA, geom = "line", group = CountyName) +
+    facet_grid(variable ~ ., scale = "free_y") +
+    theme_bw()
+
+ggplotly()
+```
+
+```{r}
+fit <- zri_CA %>% as_tsibble() %>%
+  model(
+    ets = ETS(avg_rent ~ trend("A")),
+    arima = ARIMA(avg_rent)
+  )
+fit
+```
+
