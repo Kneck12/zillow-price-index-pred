@@ -4,7 +4,16 @@ import matplotlib.pyplot as plt;
 import pandas as pd;
 
 from sklearn.metrics import mean_squared_error;
-from constants import *;
+#from constants import *;
+
+# 9/14 test: LSTM16 + LSTM 16, Batch 4 + Windows 6
+
+MONTHS = 72;
+SPLIT = 60; # 2014-2018: training, 2019: testing.
+BATCH_SIZE = 24;
+WINDOW_SIZE = 12;
+
+TEST_LENGTH = MONTHS - SPLIT;
 
 multi_data = pd.read_csv('../data/zri_multifamily_v2.csv');
 
@@ -37,7 +46,7 @@ def NN_model(dataset):
         tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(16, return_sequences=True)),
         #  tf.keras.layers.SimpleRNN(16, return_sequences=True),
         #  tf.keras.layers.SimpleRNN(16, return_sequences=True),
-    #   tf.keras.layers.Dense(16, activation="relu"),
+        tf.keras.layers.Dense(8, activation="relu"),
     #   tf.keras.layers.Dense(16, activation="relu"),
         tf.keras.layers.Dense(1),
         tf.keras.layers.Lambda(lambda x: x * 2.0)
@@ -113,5 +122,6 @@ def NN_test(ZONE, plot=False):
         plot_series(time_actual, actual);
         plot_series(time_actual, results);
         plot_series(time_test, pure_forecast);
+        plt.show();
 
     return MSE_train, MSE_test, MSE_pure, np.array(pure_forecast[-TEST_LENGTH:]) * single_city_series_std + single_city_series_mean;
