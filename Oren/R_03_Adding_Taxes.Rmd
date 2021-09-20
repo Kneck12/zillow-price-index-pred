@@ -23,6 +23,8 @@ library(skimr)
 library(zoo)
 library(lubridate)
 library(lme4)
+library(readr)
+library(stringi)
 ```
 
 
@@ -30,6 +32,14 @@ library(lme4)
 ```{r}
 zri_df_og <-read_csv("../../data/HIER_zri_multifamily_v2.csv")
 taxes_df_og <-read_csv("../data/final_TAXES_by_zip.csv")
+gdp_df_og <-read_csv("../data/GDP_byZip.csv")
+```
+
+```{r}
+
+test <-  read_csv("../data/GDP_byZip.csv") 
+test %>% filter(usps_zip_pref_state == "MA")
+
 ```
 
 
@@ -63,7 +73,7 @@ zri_df_full$ym <- yearmonth(zri_df_full$dates)
 #   select(-variable) %>% rename(avg_rent = value)
 
 
-zri_df_full <- zri_df_full %>% as_tsibble(key = c(zip), index = c(ym)) 
+# zri_df_full <- zri_df_full %>% as_tsibble(key = c(zip), index = c(ym)) 
 
 ```
 ```{r}
@@ -77,15 +87,80 @@ taxes_df <- taxes_df %>% select(c(ZIPCODE, state_local_perc, ym))
 
 taxes_df <- taxes_df %>% as_tsibble(key = c(ZIPCODE), index = c(ym)) 
 
+# taxes_df %>% filter(ZIPCODE == "01013")
+
 ```
 
 
 ```{r}
-full_df <- inner_join(zri_df_full, taxes_df, by= c("zip" = "ZIPCODE", "ym" = "ym"))
+gdp_df <- gdp_df_og
 
+gdp_df <- gdp_df %>% select(c(zip, year, month, value)) %>% filter(year > 2010)
+
+gdp_df$ym <- yearmonth(stri_c(gdp_df$year,gdp_df$month, sep="-", collapse=NULL, ignore_null=TRUE))
+
+gdp_df <- gdp_df %>% 
+  select(c(zip, value, ym)) %>% 
+  rename(GDP = value) %>% 
+  mutate(across(zip, as.character))
+
+
+# gdp_df %>% filter(zip == "1013")
+
+
+# gdp_df <- gdp_df %>% as_tsibble(key = c(zip), index = c(ym)) 
+
+
+full_df_test <- right_join(gdp_df, taxes_df, by= c("zip" = "ZIPCODE", "ym" = "ym"))
+# full_df_test <- full_df_test %>% as_tsibble(key = c(zip), index = c(ym)) 
+unique(taxes_df$ZIPCODE)
 ```
 
 
+
+```{r}
+full_df <- inner_join(zri_df_full, full_df_test, by= c("zip" = "zip", "ym" = "ym"))
+# full_df <- left_join(full_df, full_df_test, by= c("zip" = "zip", "ym" = "ym"))
+
+
+full_df[-c(137),] 
+full_df_test <- full_df %>% as_tsibble(key = c(zip), index = c(ym))
+sum(duplicated(full_df))
+```
+
+```{r}
+data_count_2 <- full_df[-c(137),]  %>%
+  group_by(ym) %>%
+  summarise(count =  sum(duplicated(zip)))
+data_count_2 
+```
+
+
+
+```{r}
+zri_VA <- full_df %>%
+  filter(State == "VA") %>% filter_index(~"2016-12") %>%
+  aggregate_key(City / zip, avg_rent = mean(avg_rent))
+
+fit_rob <- zri_VA %>%
+  model(base = ETS(avg_rent)) %>%
+  reconcile(
+    bu = bottom_up(base),
+    ols = min_trace(base, method = "ols"),
+    mint = min_trace(base, method = "mint_shrink"),
+  )
+
+rob_plot <- fit_rob %>%
+  forecast() 
+
+
+zri_VA_full <- full_df %>%
+  filter(State == "VA") #%>% filter(zip == "22201")
+#rob_plot %>% filter(zip == "22201")%>% autoplot(zri_VA_22201)
+
+forecast::accuracy((fit_rob %>%
+  forecast()), zri_VA_full)
+```
 
 ```{r}
 
@@ -129,16 +204,21 @@ fc %>% autoplot(zri_VA)
 
 
 ```{r}
-zri_VA_leveled <- zri_VA %>%
-  aggregate_key((State/CountyName/City/zip), sum_rent = sum(avg_rent))
 
-fit <- zri_VA_leveled %>%
-  filter_index(~"2018-12") %>%
-  model(base = ETS(sum_rent)) %>%
+zri_IL <- full_df %>%
+  filter(State == "IL")
+zri_IL_leveled <- zri_IL %>%
+  aggregate_key((City/zip), mean_rent = mean(avg_rent), taxes = mean(state_local_perc))
+
+fit <- zri_IL_leveled %>%
+  filter_index(~"2018-01") %>%
+  model(ets = ETS(mean_rent ~ taxes))
+
+# + error("M") + trend(method = c("N", "A", "Ad")) + season(method = c("N", "A", "M")))) # %>%
   reconcile(
     bu = bottom_up(base),
     ols = min_trace(base, method = "ols"),
-    mint = min_trace(base, method = "mint_shrink"),
+    # mint = min_trace(base, method = "mint_shrink"),
 )
 
 ```
@@ -157,16 +237,45 @@ fc
 fc %>%
   # filter(is_aggregated(State), is_aggregated(City)) %>%
   autoplot(
-    zri_VA_leveled ,
-    level = NULL
+    zri_IL_leveled 
   ) +
   facet_wrap(vars(zip), scales = "free_y")
 
 
 
 # zri_VA <- zri_VA %>% filter(zip == "22031")
-autoplot(fc %>% filter(zip == "22031")) 
+autoplot(fc %>% filter(zip == "60606")) 
 
-%>% autoplot(zri_VA)
+%>% autoplot(zri_IL)
+```
+
+
+
+```{r}
+zri_FL <- full_df %>%
+  filter(State == "FL")
+zri_FL_leveled <- zri_FL %>%
+  aggregate_key((City/zip), mean_rent = mean(avg_rent), taxes = mean(state_local_perc))
+
+fit <- zri_FL_leveled %>%
+  filter_index(~"2018-01") %>%
+  model(ets = ETS(mean_rent ~ taxes))
+
+fc <- fit %>% forecast(h = "1 year")
+fc
+
+
+fc %>%
+  # filter(is_aggregated(State), is_aggregated(City)) %>%
+  autoplot(
+    zri_IL_leveled 
+  ) +
+  facet_wrap(vars(zip), scales = "free_y")
+
+# 
+# 
+# # zri_VA <- zri_VA %>% filter(zip == "22031")
+# autoplot(fc %>% filter(zip == "60606")) 
+
 ```
 
