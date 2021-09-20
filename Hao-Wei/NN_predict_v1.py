@@ -31,10 +31,20 @@ def plot_series(time, series, format="-", start=0, end=None):
     plt.ylabel("ZRI")
     plt.grid(True)
 
-def NN_model(dataset):
+def NN_model(dataset, termination=0):
     tf.keras.backend.clear_session()
     # dataset = windowed_dataset(x_train, window_size, batch_size, shuffle_buffer_size)
 
+    class myCallbacks(tf.keras.callbacks.Callback):
+        def on_epoch_end(self, epoch, logs={}):
+            mse = logs.get("mse");
+            if(mse < termination):
+                print("\nGot an mse at {:.4f} in round {} and stopped training\n".format(mse, epoch));
+                self.model.stop_training = True;
+            
+    callback = myCallbacks();
+
+    
     model = tf.keras.models.Sequential([
         tf.keras.layers.Lambda(lambda x: tf.expand_dims(x, axis=-1),
                           input_shape=[None]),
@@ -56,7 +66,8 @@ def NN_model(dataset):
     model.compile(loss=tf.keras.losses.Huber(),
                   optimizer="adam",
                   metrics=["mae", "mse"])
-    history = model.fit(dataset, epochs=500, verbose = 0);
+    # history = model.fit(dataset, epochs=500, verbose = 0);
+    history = model.fit(dataset, epochs=500, verbose = 0, callbacks=[callback]);
     return model;
 
 def NN_forecast(model, single_city_series):
@@ -81,7 +92,7 @@ def NN_forecast(model, single_city_series):
     return results, actual, pure_forecast;
 
 @tf.autograph.experimental.do_not_convert
-def NN_test(ZONE, plot=False):
+def NN_test(ZONE, termination=0,plot=False):
     '''
     Input: ZONE
     Output: the RMSE of a NN model on the predicted train, partially predicted test, and complete predicted test.
@@ -103,7 +114,7 @@ def NN_test(ZONE, plot=False):
     
     # Window the training set to make input of the NN
     dataset = windowed_dataset(single_city_train, WINDOW_SIZE, BATCH_SIZE, 60);
-    model = NN_model(dataset);
+    model = NN_model(dataset, termination);
     
     time_train = list(range(SPLIT));
     time_test = list(range(SPLIT, len(single_city_series)));
