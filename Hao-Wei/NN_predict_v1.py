@@ -4,7 +4,16 @@ import matplotlib.pyplot as plt;
 import pandas as pd;
 
 from sklearn.metrics import mean_squared_error;
-from constants import *;
+#from constants import *;
+
+# 9/14 test: LSTM16 + LSTM 16, Batch 4 + Windows 6
+
+MONTHS = 72;
+SPLIT = 60; # 2014-2018: training, 2019: testing.
+BATCH_SIZE = 24;
+WINDOW_SIZE = 12;
+
+TEST_LENGTH = MONTHS - SPLIT;
 
 multi_data = pd.read_csv('../data/zri_multifamily_v2.csv');
 
@@ -22,10 +31,20 @@ def plot_series(time, series, format="-", start=0, end=None):
     plt.ylabel("ZRI")
     plt.grid(True)
 
-def NN_model(dataset):
+def NN_model(dataset, termination=0):
     tf.keras.backend.clear_session()
     # dataset = windowed_dataset(x_train, window_size, batch_size, shuffle_buffer_size)
 
+    class myCallbacks(tf.keras.callbacks.Callback):
+        def on_epoch_end(self, epoch, logs={}):
+            mse = logs.get("mse");
+            if(mse < termination):
+                print("\nGot an mse at {:.4f} in round {} and stopped training\n".format(mse, epoch));
+                self.model.stop_training = True;
+            
+    callback = myCallbacks();
+
+    
     model = tf.keras.models.Sequential([
         tf.keras.layers.Lambda(lambda x: tf.expand_dims(x, axis=-1),
                           input_shape=[None]),
@@ -37,7 +56,7 @@ def NN_model(dataset):
         tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(16, return_sequences=True)),
         #  tf.keras.layers.SimpleRNN(16, return_sequences=True),
         #  tf.keras.layers.SimpleRNN(16, return_sequences=True),
-    #   tf.keras.layers.Dense(16, activation="relu"),
+        tf.keras.layers.Dense(8, activation="relu"),
     #   tf.keras.layers.Dense(16, activation="relu"),
         tf.keras.layers.Dense(1),
         tf.keras.layers.Lambda(lambda x: x * 2.0)
@@ -47,7 +66,8 @@ def NN_model(dataset):
     model.compile(loss=tf.keras.losses.Huber(),
                   optimizer="adam",
                   metrics=["mae", "mse"])
-    history = model.fit(dataset, epochs=500, verbose = 0);
+    # history = model.fit(dataset, epochs=500, verbose = 0);
+    history = model.fit(dataset, epochs=500, verbose = 0, callbacks=[callback]);
     return model;
 
 def NN_forecast(model, single_city_series):
@@ -72,7 +92,7 @@ def NN_forecast(model, single_city_series):
     return results, actual, pure_forecast;
 
 @tf.autograph.experimental.do_not_convert
-def NN_test(ZONE, plot=False):
+def NN_test(ZONE, termination=0,plot=False):
     '''
     Input: ZONE
     Output: the RMSE of a NN model on the predicted train, partially predicted test, and complete predicted test.
@@ -94,7 +114,7 @@ def NN_test(ZONE, plot=False):
     
     # Window the training set to make input of the NN
     dataset = windowed_dataset(single_city_train, WINDOW_SIZE, BATCH_SIZE, 60);
-    model = NN_model(dataset);
+    model = NN_model(dataset, termination);
     
     time_train = list(range(SPLIT));
     time_test = list(range(SPLIT, len(single_city_series)));
@@ -113,5 +133,6 @@ def NN_test(ZONE, plot=False):
         plot_series(time_actual, actual);
         plot_series(time_actual, results);
         plot_series(time_test, pure_forecast);
+        plt.show();
 
     return MSE_train, MSE_test, MSE_pure, np.array(pure_forecast[-TEST_LENGTH:]) * single_city_series_std + single_city_series_mean;
