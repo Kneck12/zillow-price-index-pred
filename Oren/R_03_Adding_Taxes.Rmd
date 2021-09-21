@@ -25,12 +25,13 @@ library(lubridate)
 library(lme4)
 library(readr)
 library(stringi)
+library(reprex)
 ```
 
 
 
 ```{r}
-zri_df_og <-read_csv("../../data/HIER_zri_multifamily_v2.csv")
+zri_df_og <-read_csv("../data/zri_multifamily_v2.csv")
 taxes_df_og <-read_csv("../data/final_TAXES_by_zip.csv")
 gdp_df_og <-read_csv("../data/GDP_byZip.csv")
 ```
@@ -45,23 +46,22 @@ test %>% filter(usps_zip_pref_state == "MA")
 
 
 ```{r}
-zri_df <- select(zri_df_og, -c('SizeRank', 'Metro')) 
+zri_df <- select(zri_df_og, -c( 'Metro')) 
 
-zri_df <- drop_na(zri_df)
+# zri_df <- drop_na(zri_df)
 
-zri_df_melted <- melt(zri_df, id.vars = c('zip', 'City', 'State',  'CountyName'))
+zri_df_melted <- melt(zri_df, id.vars = c('zip', 'City', 'State',  'CountyName', 'year-month'))
 zri_df_melted
 
-zri_df_full <-zri_df_melted %>% 
-  mutate(dates=ym(variable), Month_Yr = format_ISO8601(dates, precision = "ym")) %>%
-  select(-variable) %>% rename(avg_rent = value) 
+zri_df_full <-zri_df_melted %>%
+  select(-variable) %>% rename(avg_rent = value) %>% rename(dates = 'year-month') 
+
 
 # zri_df_full <- zri_df_full %>% tsibble(dates = yearmonth(dates), index = dates)
 
 
 
 zri_df_full$ym <- yearmonth(zri_df_full$dates) 
-
 
 
 # zri_df_full <- zri_df_ful %>%
@@ -73,9 +73,13 @@ zri_df_full$ym <- yearmonth(zri_df_full$dates)
 #   select(-variable) %>% rename(avg_rent = value)
 
 
-# zri_df_full <- zri_df_full %>% as_tsibble(key = c(zip), index = c(ym)) 
+zri_df_full <- zri_df_full %>%
+  select(-dates) %>% 
+  as_tsibble(key = c(zip), index = c(ym))
 
 ```
+
+
 ```{r}
 taxes_df <- taxes_df_og
 
@@ -138,29 +142,66 @@ data_count_2
 
 
 ```{r}
-zri_VA <- full_df %>%
-  filter(State == "VA") %>% filter_index(~"2016-12") %>%
-  aggregate_key(City / zip, avg_rent = mean(avg_rent))
+zri_VA <- zri_df_full %>%
+  filter(State == "VA" | State == "IL") %>% filter_index(~"2017-12") %>%
+  aggregate_key(State / City / zip, avg_rent = mean(avg_rent))
 
 fit_rob <- zri_VA %>%
-  model(base = ETS(avg_rent)) %>%
+  model(base = ETS(avg_rent,
+  opt_crit = "mae")) %>%
   reconcile(
     bu = bottom_up(base),
-    ols = min_trace(base, method = "ols"),
-    mint = min_trace(base, method = "mint_shrink"),
   )
 
-rob_plot <- fit_rob %>%
-  forecast() 
+rob_plot <- fit_rob %>% forecast(h = "1 year") 
 
 
-zri_VA_full <- full_df %>%
-  filter(State == "VA") #%>% filter(zip == "22201")
-#rob_plot %>% filter(zip == "22201")%>% autoplot(zri_VA_22201)
+zri_VA_full <- zri_df_full %>%
+  filter(State == "VA" | State == "IL") #%>% filter(zip == "22201")
+# rob_plot %>% filter(zip == "22201")%>% autoplot(zri_VA_22201)
 
-forecast::accuracy((fit_rob %>%
-  forecast()), zri_VA_full)
+test <- na.omit(fabletools::accuracy(rob_plot, zri_VA_full)$RMSE)
+
+mean(test)
+# saveRDS(fit_rob, "model.rds")
+fit_rob %>% components()
+
+fit_rob %>% forecast(h = "1 year")  %>% 
+  filter(is_aggregated(key))
+
 ```
+
+
+
+```{r}
+zri_most <- zri_df_full %>%
+  filter(State != "CA" & State == "NY") %>% filter_index(~"2017-12") %>%
+  aggregate_key(State / zip, avg_rent = mean(avg_rent))
+
+fit_rob <- zri_most %>%
+  model(base = ETS(avg_rent,
+  opt_crit = "mae")) %>%
+  reconcile(
+    bu = bottom_up(base),
+  )
+
+rob_plot <- fit_rob %>% forecast(h = "1 year") 
+
+
+zri_most_full <- zri_df_full %>%
+  filter(State != "CA" & State == "NY")  #%>% filter(zip == "22201")
+# # rob_plot %>% filter(zip == "22201")%>% autoplot(zri_VA_22201)
+
+test <- na.omit(fabletools::accuracy(rob_plot, zri_most_full)$RMSE)
+
+mean(test)
+
+
+
+
+```
+
+
 
 ```{r}
 
