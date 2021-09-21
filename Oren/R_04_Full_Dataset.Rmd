@@ -1,0 +1,240 @@
+---
+title: "Testing_VA"
+author: "Oren"
+date: "9/18/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+library(fable)
+library(tsibble)
+library(dplyr)
+library(tidyverse)
+library(reshape2)
+library(ggplot2)
+library(plotly)
+library(feasts)
+library(imputeTS)
+library(tidymodels)
+library(skimr)
+library(zoo)
+library(lubridate)
+library(lme4)
+library(readr)
+library(stringi)
+library(reprex)
+```
+
+
+
+```{r}
+zri_df_og <-read_csv("../../data/full_dataset_unscaled.csv")
+
+```
+
+```{r}
+length(unique(unlist(zri_df_og[c("City")])))
+length(unique(unlist(zri_df_og[c("State")])))
+length(unique(unlist(zri_df_og[c("Metro")])))
+length(unique(unlist(zri_df_og[c("CountyName")])))
+
+zri_df_og %>% group_by(Metro) %>% summarise(Unique_Elements = n_distinct(zip))
+```
+
+
+
+```{r}
+zri_df <- zri_df_og
+
+zri_df$ym <- yearmonth(zri_df$datetime) 
+
+zri_df <- zri_df %>%
+  select(-c(datetime, year, month)) %>% 
+  as_tsibble(key = c(zip), index = c(ym))
+
+```
+
+
+
+```{r}
+zri_VA <- zri_df_full %>%
+  filter(State == "VA" | State == "IL") %>% filter_index(~"2017-12") %>%
+  aggregate_key(State / City / zip, avg_rent = mean(avg_rent))
+
+fit_rob <- zri_VA %>%
+  model(base = ETS(avg_rent,
+  opt_crit = "mae")) %>%
+  reconcile(
+    bu = bottom_up(base),
+  )
+
+rob_plot <- fit_rob %>% forecast(h = "1 year") 
+
+
+zri_VA_full <- zri_df_full %>%
+  filter(State == "VA" | State == "IL") #%>% filter(zip == "22201")
+# rob_plot %>% filter(zip == "22201")%>% autoplot(zri_VA_22201)
+
+test <- na.omit(fabletools::accuracy(rob_plot, zri_VA_full)$RMSE)
+
+mean(test)
+# saveRDS(fit_rob, "model.rds")
+fit_rob %>% components()
+
+fit_rob %>% forecast(h = "1 year")  %>% 
+  filter(is_aggregated(key))
+
+```
+
+
+
+```{r}
+zri_most <- zri_df_full %>%
+  filter(State != "CA" & State == "NY") %>% filter_index(~"2017-12") %>%
+  aggregate_key(State / zip, avg_rent = mean(avg_rent))
+
+fit_rob <- zri_most %>%
+  model(base = ETS(avg_rent,
+  opt_crit = "mae")) %>%
+  reconcile(
+    bu = bottom_up(base),
+  )
+
+rob_plot <- fit_rob %>% forecast(h = "1 year") 
+
+
+zri_most_full <- zri_df_full %>%
+  filter(State != "CA" & State == "NY")  #%>% filter(zip == "22201")
+# # rob_plot %>% filter(zip == "22201")%>% autoplot(zri_VA_22201)
+
+test <- na.omit(fabletools::accuracy(rob_plot, zri_most_full)$RMSE)
+
+mean(test)
+
+
+
+
+```
+
+
+
+```{r}
+
+zri_VA <- full_df %>%
+  filter(State == "VA")
+
+zri_VA <- zri_VA %>% as_tsibble(key = c(zip)) %>% tsibble::fill_gaps()
+zri_VA %>% as_tsibble() %>%
+  ggplot2::autoplot(avg_rent)
+
+```
+
+```{r}
+zri_VA <- full_df %>%
+  filter(State == "VA")
+VA_plot <- zri_VA %>% filter_index(~"2017-12")
+
+fit_VA <- VA_plot %>%
+  model(
+    ets = ETS(avg_rent ~ state_local_perc + error("M") + trend(method = c("N", "A", "Ad")) + season(method = c("N", "A", "M"))),
+    arima = ARIMA(avg_rent),
+    
+  )
+fit_VA
+
+fit_VA %>%
+  glance()
+```
+
+
+```{r}
+fc <- fit_VA %>% filter(zip == "22031") %>%
+  forecast(h = "1 year")
+fc
+```
+
+```{r}
+zri_VA <- zri_VA %>% filter(zip == "22031")
+fc %>% autoplot(zri_VA)
+```
+
+
+```{r}
+
+zri_IL <- full_df %>%
+  filter(State == "IL")
+zri_IL_leveled <- zri_IL %>%
+  aggregate_key((City/zip), mean_rent = mean(avg_rent), taxes = mean(state_local_perc))
+
+fit <- zri_IL_leveled %>%
+  filter_index(~"2018-01") %>%
+  model(ets = ETS(mean_rent ~ taxes))
+
+# + error("M") + trend(method = c("N", "A", "Ad")) + season(method = c("N", "A", "M")))) # %>%
+  reconcile(
+    bu = bottom_up(base),
+    ols = min_trace(base, method = "ols"),
+    # mint = min_trace(base, method = "mint_shrink"),
+)
+
+```
+
+```{r}
+accuracy(fit)
+```
+
+```{r}
+fc <- fit %>% forecast(h = "1 year")
+fc
+
+```
+
+```{r}
+fc %>%
+  # filter(is_aggregated(State), is_aggregated(City)) %>%
+  autoplot(
+    zri_IL_leveled 
+  ) +
+  facet_wrap(vars(zip), scales = "free_y")
+
+
+
+# zri_VA <- zri_VA %>% filter(zip == "22031")
+autoplot(fc %>% filter(zip == "60606")) 
+
+%>% autoplot(zri_IL)
+```
+
+
+
+```{r}
+zri_FL <- full_df %>%
+  filter(State == "FL")
+zri_FL_leveled <- zri_FL %>%
+  aggregate_key((City/zip), mean_rent = mean(avg_rent), taxes = mean(state_local_perc))
+
+fit <- zri_FL_leveled %>%
+  filter_index(~"2018-01") %>%
+  model(ets = ETS(mean_rent ~ taxes))
+
+fc <- fit %>% forecast(h = "1 year")
+fc
+
+
+fc %>%
+  # filter(is_aggregated(State), is_aggregated(City)) %>%
+  autoplot(
+    zri_IL_leveled 
+  ) +
+  facet_wrap(vars(zip), scales = "free_y")
+
+# 
+# 
+# # zri_VA <- zri_VA %>% filter(zip == "22031")
+# autoplot(fc %>% filter(zip == "60606")) 
+
+```
+
