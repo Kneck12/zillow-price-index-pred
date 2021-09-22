@@ -26,6 +26,7 @@ library(lme4)
 library(readr)
 library(stringi)
 library(reprex)
+library(sparklyr)
 ```
 
 
@@ -41,13 +42,15 @@ length(unique(unlist(zri_df_og[c("State")])))
 length(unique(unlist(zri_df_og[c("Metro")])))
 length(unique(unlist(zri_df_og[c("CountyName")])))
 
+sum(is.na(zri_df_og$CountyName))
+
 zri_df_og %>% group_by(Metro) %>% summarise(Unique_Elements = n_distinct(zip))
 ```
 
 
 
 ```{r}
-zri_df <- zri_df_og
+zri_df <- zri_df_og 
 
 zri_df$ym <- yearmonth(zri_df$datetime) 
 
@@ -57,38 +60,198 @@ zri_df <- zri_df %>%
 
 ```
 
-
-
 ```{r}
-zri_VA <- zri_df_full %>%
-  filter(State == "VA" | State == "IL") %>% filter_index(~"2017-12") %>%
-  aggregate_key(State / City / zip, avg_rent = mean(avg_rent))
+zri_for_modeling_base_NOMETRO <- zri_df %>% filter_index(~"2018-12") %>%
+  aggregate_key(State/  City/ zip, zri = mean(zri))
 
-fit_rob <- zri_VA %>%
-  model(base = ETS(avg_rent,
-  opt_crit = "mae")) %>%
+fit_base_model_NOMETRO <- zri_for_modeling_base_NOMETRO %>%
+  model(base = ETS(zri,
+  opt_crit = "mse")) %>%
   reconcile(
     bu = bottom_up(base),
   )
+saveRDS(fit_base_model_NOMETRO, file = "fit_base_model_NOMETRO.Rds")
+forecast_base_model_NOMETRO <- fit_base_model_NOMETRO %>% forecast(h = "1 year") 
 
-rob_plot <- fit_rob %>% forecast(h = "1 year") 
+
+zri_for_modeling_base_alldates <- zri_df  %>%
+  aggregate_key(State/ City/ zip, zri = mean(zri))
 
 
-zri_VA_full <- zri_df_full %>%
-  filter(State == "VA" | State == "IL") #%>% filter(zip == "22201")
-# rob_plot %>% filter(zip == "22201")%>% autoplot(zri_VA_22201)
+# fabletools::accuracy(rob_plot, zri_VA_full)
+test <- fabletools::accuracy(forecast_base_model_NOMETRO, zri_for_modeling_base_alldates_NOMETRO)
+# 
+# 
+# 
+test
 
-test <- na.omit(fabletools::accuracy(rob_plot, zri_VA_full)$RMSE)
-
-mean(test)
-# saveRDS(fit_rob, "model.rds")
-fit_rob %>% components()
-
-fit_rob %>% forecast(h = "1 year")  %>% 
-  filter(is_aggregated(key))
+mean(test$RMSE)
+# # saveRDS(fit_rob, "model.rds")
+# fit_rob %>% components()
+# 
+# fit_rob %>% forecast(h = "1 year")  %>% 
+#   filter(is_aggregated(key))
 
 ```
 
+```{r}
+zri_for_modeling_base <- zri_df %>% filter_index(~"2018-12") %>%
+  aggregate_key(State/ Metro / City/ zip, zri = mean(zri))
+
+fit_base_model <- zri_for_modeling_base %>%
+  model(base = ETS(zri,
+  opt_crit = "mse")) %>%
+  reconcile(
+    bu = bottom_up(base),
+  )
+saveRDS(fit_base_model, file = "fit_base_model.Rds")
+forecast_base_model <- fit_base_model %>% forecast(h = "1 year") 
+
+
+# zri_for_modeling_base_alldates <- zri_df  %>%
+  aggregate_key(State/ Metro / City/ zip, zri = mean(zri))
+
+
+# fabletools::accuracy(rob_plot, zri_VA_full)
+test <- fabletools::accuracy(forecast_base_model, zri_for_modeling_base_alldates)
+# 
+# 
+# 
+test
+
+mean(test)
+# # saveRDS(fit_rob, "model.rds")
+# fit_rob %>% components()
+# 
+# fit_rob %>% forecast(h = "1 year")  %>% 
+#   filter(is_aggregated(key))
+
+```
+
+```{r}
+zri_for_modeling_full <- zri_df %>% as_tsibble() %>% filter_index(~"2018-12") %>%
+  aggregate_key(State/ Metro / City/ zip, zri = mean(zri), 
+                percent_white = mean(percent_white),
+                percent_black = mean(percent_black),
+                percent_asian = mean(percent_asian),
+                percent_hispanic = mean(percent_hispanic),
+                percent_native_am = mean(percent_native_am),
+                percent_other_race = mean(percent_other_race),
+                percent_0_17 = mean(percent_0_17),
+                percent_18_39 = mean(percent_18_39),
+                percent_40_64 = mean(percent_40_64),
+                percent_65 = mean(percent_65),
+                percent_rental_units_vacant = mean(percent_rental_units_vacant),
+                percent_rental_units_occupied = mean(percent_rental_units_occupied),
+                percent_graduate_deg = mean(percent_graduate_deg),
+                percent_bachelors = mean(percent_bachelors),
+                percent_associates = mean(percent_associates),
+                percent_highschool = mean(percent_highschool),
+                percent_less_highschool = mean(percent_less_highschool),
+                percent_commute_public_transport = mean(percent_commute_public_transport),
+                percent_commute_less_30 = mean(percent_commute_less_30),
+                percent_buildings_less_10_units = mean(percent_buildings_less_10_units),
+                percent_buildings_10_19_units = mean(percent_buildings_10_19_units),
+                percent_buildings_20_49_units = mean(percent_buildings_20_49_units),
+                percent_buildings_50_units = mean(percent_buildings_50_units),
+                percent_commute_30_to_59 = mean(percent_commute_30_to_59),
+                percent_commute_60_to_89 = mean(percent_commute_60_to_89),
+                percent_commute_90_more = mean(percent_commute_90_more),
+                percent_new_city = mean(percent_new_city),
+                percent_new_unit = mean(percent_new_unit),
+                percent_units_owner_occupied = mean(percent_units_owner_occupied),
+                median_building_age = mean(median_building_age),
+                income_per_capita = mean(income_per_capita),
+                poverty_rate = mean(poverty_rate),
+                total_pop = mean(total_pop),
+                percent_workforce_unemployed = mean(percent_workforce_unemployed),
+                percent_work_from_home = mean(percent_work_from_home),
+                median_age = mean(median_age),
+                percent_female = mean(percent_female),
+                gini_index = mean(gini_index),
+                percent_not_us_citizen = mean(percent_not_us_citizen),
+                bs_total_stations = mean(bs_total_stations),
+                bs_total_systems = mean(bs_total_systems),
+                has_bike_sharing = mean(has_bike_sharing),
+                state_local_perc = mean(state_local_perc))
+
+fit_full_model <- zri_for_modeling_full %>%
+  model(base = ETS(zri,
+  opt_crit = "mse")) %>%
+  reconcile(
+    bu = bottom_up(base),
+  )
+saveRDS(fit_full_model, file = "fit_full_model.Rds")
+
+forecast_full_model <- fit_full_model %>% forecast(h = "1 year") 
+
+# 
+zri_for_modeling_full <- zri_df #%>%
+  aggregate_key(State/ Metro / City/ zip, zri = mean(zri), 
+                percent_white = mean(percent_white),
+                percent_black = mean(percent_black),
+                percent_asian = mean(percent_asian),
+                percent_hispanic = mean(percent_hispanic),
+                percent_native_am = mean(percent_native_am),
+                percent_other_race = mean(percent_other_race),
+                percent_0_17 = mean(percent_0_17),
+                percent_18_39 = mean(percent_18_39),
+                percent_40_64 = mean(percent_40_64),
+                percent_65 = mean(percent_65),
+                percent_rental_units_vacant = mean(percent_rental_units_vacant),
+                percent_rental_units_occupied = mean(percent_rental_units_occupied),
+                percent_graduate_deg = mean(percent_graduate_deg),
+                percent_bachelors = mean(percent_bachelors),
+                percent_associates = mean(percent_associates),
+                percent_highschool = mean(percent_highschool),
+                percent_less_highschool = mean(percent_less_highschool),
+                percent_commute_public_transport = mean(percent_commute_public_transport),
+                percent_commute_less_30 = mean(percent_commute_less_30),
+                percent_buildings_less_10_units = mean(percent_buildings_less_10_units),
+                percent_buildings_10_19_units = mean(percent_buildings_10_19_units),
+                percent_buildings_20_49_units = mean(percent_buildings_20_49_units),
+                percent_buildings_50_units = mean(percent_buildings_50_units),
+                percent_commute_30_to_59 = mean(percent_commute_30_to_59),
+                percent_commute_60_to_89 = mean(percent_commute_60_to_89),
+                percent_commute_90_more = mean(percent_commute_90_more),
+                percent_new_city = mean(percent_new_city),
+                percent_new_unit = mean(percent_new_unit),
+                percent_units_owner_occupied = mean(percent_units_owner_occupied),
+                median_building_age = mean(median_building_age),
+                income_per_capita = mean(income_per_capita),
+                poverty_rate = mean(poverty_rate),
+                total_pop = mean(total_pop),
+                percent_workforce_unemployed = mean(percent_workforce_unemployed),
+                percent_work_from_home = mean(percent_work_from_home),
+                median_age = mean(median_age),
+                percent_female = mean(percent_female),
+                gini_index = mean(gini_index),
+                percent_not_us_citizen = mean(percent_not_us_citizen),
+                bs_total_stations = mean(bs_total_stations),
+                bs_total_systems = mean(bs_total_systems),
+                has_bike_sharing = mean(has_bike_sharing),
+                state_local_perc = mean(state_local_perc))
+
+  
+  
+fabletools::accuracy(forecast_full_model, zri_for_modeling_full)$RMSE  
+  # 
+# 
+# # fabletools::accuracy(rob_plot, zri_VA_full)
+test <- na.omit(fabletools::accuracy(forecast_full_model, zri_for_modeling_full)$RMSE)
+
+
+# 
+mean(test)
+# # saveRDS(fit_rob, "model.rds")
+# fit_rob %>% components()
+# 
+# fit_rob %>% forecast(h = "1 year")  %>% 
+#   filter(is_aggregated(key))
+
+```
+saveRDS(data, file = "data.Rds")
+data.copy <- readRDS(file = "data.Rds")
 
 
 ```{r}
