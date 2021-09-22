@@ -1,0 +1,161 @@
+,Feature,Importance
+41,zri_lag1,0.63081205
+43,zri_lag3,0.1306485
+42,zri_lag2,0.10222745
+47,zri_diff_lag1_lag2,0.020009566
+48,zri_diff_lag2_lag3,0.0043026856
+149,fake news_lag2,0.0025106815
+148,fake news_lag1,0.001899189
+38,total_firms,0.0015038182
+152,house for rent_lag1,0.0013881245
+138,political correctness_diff_lag1_lag2,0.0013025827
+114,total_firms_lag12,0.001288455
+57,zri_diff_lag11_lag12,0.0012650964
+133,black lives matter_lag2,0.0012181443
+58,bs_total_systems_lag12,0.001216492
+159,townhouse for rent_diff_lag2_lag3,0.0010921379
+139,political correctness_diff_lag2_lag3,0.0010871241
+35,house for rent,0.0010513939
+158,townhouse for rent_diff_lag1_lag2,0.0010484838
+51,zri_diff_lag5_lag6,0.0010368206
+32,make america great again,0.0010349192
+140,make america great again_lag1,0.0010347526
+46,zri_diff_lag1_lag12,0.0010322962
+156,townhouse for rent_lag1,0.0009980756
+52,zri_diff_lag6_lag7,0.0009949724
+56,zri_diff_lag10_lag11,0.0009919839
+49,zri_diff_lag3_lag4,0.0009899592
+50,zri_diff_lag4_lag5,0.0009871367
+150,fake news_diff_lag1_lag2,0.0009783069
+45,zri_lag5,0.0009770596
+145,twitter_lag2,0.0009731293
+128,same sex marriage_lag1,0.00096548884
+39,job_creation_rate,0.0009474299
+55,zri_diff_lag9_lag10,0.0009466453
+141,make america great again_lag2,0.000939536
+157,townhouse for rent_lag2,0.0009333614
+37,starbucks,0.00093249447
+132,black lives matter_lag1,0.00093220995
+30,black lives matter,0.0009154969
+116,job_creation_rate_lag12,0.00091210636
+59,bs_total_systems_diff_lag1_lag12,0.00090991636
+31,political correctness,0.00089897116
+117,job_creation_rate_diff_lag1_lag12,0.00088979414
+153,house for rent_lag2,0.0008892945
+27,bs_total_systems,0.0008878669
+142,make america great again_diff_lag1_lag2,0.0008877955
+44,zri_lag4,0.000887231
+28,unemployment,0.00087657897
+60,median_building_age_lag12,0.0008743363
+34,fake news,0.00086651207
+143,make america great again_diff_lag2_lag3,0.00086596335
+135,black lives matter_diff_lag2_lag3,0.0008605879
+115,total_firms_diff_lag1_lag12,0.0008542627
+131,same sex marriage_diff_lag2_lag3,0.0008464265
+137,political correctness_lag2,0.00084639556
+144,twitter_lag1,0.0008455362
+155,house for rent_diff_lag2_lag3,0.00083926687
+129,same sex marriage_lag2,0.00083568774
+136,political correctness_lag1,0.0008271704
+36,townhouse for rent,0.0008152516
+120,starbucks_lag1,0.0008136591
+154,house for rent_diff_lag1_lag2,0.00080320373
+53,zri_diff_lag7_lag8,0.0007916402
+124,unemployment_lag1,0.00078356045
+118,state_local_perc_lag12,0.0007831781
+121,starbucks_lag2,0.0007809587
+151,fake news_diff_lag2_lag3,0.00077408744
+130,same sex marriage_diff_lag1_lag2,0.0007732547
+54,zri_diff_lag8_lag9,0.00076553324
+33,twitter,0.00075695873
+146,twitter_diff_lag1_lag2,0.00074360287
+125,unemployment_lag2,0.0007375384
+123,starbucks_diff_lag2_lag3,0.00073319237
+122,starbucks_diff_lag1_lag2,0.000730619
+29,same sex marriage,0.000726178
+17,median_building_age,0.0007244056
+134,black lives matter_diff_lag1_lag2,0.0007189813
+95,percent_workforce_unemployed_diff_lag1_lag12,0.00070146524
+126,unemployment_diff_lag1_lag2,0.0006997564
+127,unemployment_diff_lag2_lag3,0.0006989874
+147,twitter_diff_lag2_lag3,0.0006929253
+77,percent_commute_30_to_59_diff_lag1_lag12,0.00067259296
+79,percent_commute_60_to_89_diff_lag1_lag12,0.00066652027
+88,income_per_capita_lag12,0.000636032
+108,percent_buildings_10_19_units_lag12,0.0006229753
+21,percent_workforce_unemployed,0.0006219441
+97,percent_work_from_home_diff_lag1_lag12,0.000621373
+78,percent_commute_60_to_89_lag12,0.0006123794
+80,percent_commute_90_more_lag12,0.0006104046
+111,percent_buildings_20_49_units_diff_lag1_lag12,0.0006076746
+86,percent_units_owner_occupied_lag12,0.00060373894
+94,percent_workforce_unemployed_lag12,0.000602542
+92,total_pop_lag12,0.0005996043
+104,percent_not_us_citizen_lag12,0.0005987845
+83,percent_new_city_diff_lag1_lag12,0.000596671
+105,percent_not_us_citizen_diff_lag1_lag12,0.000592225
+84,percent_new_unit_lag12,0.00059001945
+82,percent_new_city_lag12,0.0005880981
+98,median_age_lag12,0.0005870668
+75,percent_commute_less_30_diff_lag1_lag12,0.0005818887
+99,median_age_diff_lag1_lag12,0.00058161473
+89,income_per_capita_diff_lag1_lag12,0.0005803047
+23,median_age,0.0005791213
+103,gini_index_diff_lag1_lag12,0.00057859754
+100,percent_female_lag12,0.00057708053
+119,state_local_perc_diff_lag1_lag12,0.0005766763
+91,poverty_rate_diff_lag1_lag12,0.0005702261
+74,percent_commute_less_30_lag12,0.0005692127
+62,percent_graduate_deg_lag12,0.0005690973
+107,percent_buildings_less_10_units_diff_lag1_lag12,0.00056850055
+70,percent_less_highschool_lag12,0.0005677865
+40,state_local_perc,0.0005663184
+101,percent_female_diff_lag1_lag12,0.0005649264
+106,percent_buildings_less_10_units_lag12,0.00056063867
+93,total_pop_diff_lag1_lag12,0.000553176
+90,poverty_rate_lag12,0.0005524321
+61,median_building_age_diff_lag1_lag12,0.0005520814
+67,percent_associates_diff_lag1_lag12,0.0005508907
+112,percent_buildings_50+_units_lag12,0.0005486172
+109,percent_buildings_10_19_units_diff_lag1_lag12,0.00054756773
+63,percent_graduate_deg_diff_lag1_lag12,0.0005457883
+64,percent_bachelors_lag12,0.00054568955
+81,percent_commute_90_more_diff_lag1_lag12,0.00054253417
+18,income_per_capita,0.0005368087
+73,percent_commute_public_transport_diff_lag1_lag12,0.0005336444
+71,percent_less_highschool_diff_lag1_lag12,0.000529883
+66,percent_associates_lag12,0.00052701676
+110,percent_buildings_20_49_units_lag12,0.0005190945
+68,percent_highschool_lag12,0.0005128819
+76,percent_commute_30_to_59_lag12,0.0005120793
+72,percent_commute_public_transport_lag12,0.00051196996
+113,percent_buildings_50+_units_diff_lag1_lag12,0.0005114898
+102,gini_index_lag12,0.00051016937
+20,total_pop,0.00050882803
+69,percent_highschool_diff_lag1_lag12,0.0005016963
+87,percent_units_owner_occupied_diff_lag1_lag12,0.00049953343
+85,percent_new_unit_diff_lag1_lag12,0.0004992117
+96,percent_work_from_home_lag12,0.0004909462
+24,percent_female,0.00048801443
+19,poverty_rate,0.0004849711
+65,percent_bachelors_diff_lag1_lag12,0.00046516457
+22,percent_work_from_home,0.00045616535
+12,percent_commute_60_to_89,0.0004485141
+26,percent_not_us_citizen,0.00044701574
+25,gini_index,0.000433585
+14,percent_new_city,0.00042803917
+15,percent_new_unit,0.0004265326
+16,percent_units_owner_occupied,0.00042588523
+11,percent_commute_30_to_59,0.00041501242
+10,percent_buildings_50+_units,0.00041317992
+13,percent_commute_90_more,0.0003840406
+8,percent_buildings_10_19_units,0.0003730765
+9,percent_buildings_20_49_units,0.00035360595
+4,percent_less_highschool,0.0003388568
+7,percent_buildings_less_10_units,0.00033104466
+6,percent_commute_less_30,0.0003238913
+5,percent_commute_public_transport,0.00026700873
+3,percent_highschool,0.00023708626
+2,percent_associates,0.00019918439
+1,percent_bachelors,0.00014202429
+0,percent_graduate_deg,8.663891e-05
