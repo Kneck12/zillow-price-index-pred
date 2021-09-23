@@ -1,0 +1,51 @@
+Parent_feature,coef_abs
+unemployment,0.060719061346954546
+twitter,0.05135847310087705
+startup_firms,0.03940040798417669
+state_local_perc,0.032658750754110434
+hurricane,0.01567175728210868
+multifamily_for_rent_searches,0.011844309765547607
+net_job_rate,0.011610068749241156
+fake news,0.011068885100103917
+starbucks,0.010375918392289026
+black lives matter,0.009178470928767486
+percent_workforce_unemployed,0.007740544521988529
+thrift,0.007592622763862254
+bs_total_stations,0.0069741015187932305
+flood,0.006567848550402526
+median_building_age,0.005870121107810504
+poverty_rate,0.005763287908947541
+places to go,0.005701884793011372
+percent_white,0.005536053032990735
+fire,0.004022969015190322
+lgbt,0.003977531442154397
+euthanasia,0.00324841936627007
+income_per_capita,0.0029453597882695332
+percent_work_from_home,0.002776062173172785
+apartment_for_rent_searches,0.002715825006323502
+percent_rental_units_occupied,0.0024809769874637026
+retirement,0.0014876102279513395
+whole foods,0.00132608197813056
+percent_units_owner_occupied,0.0012658225506114655
+total_pop,0.001031473571783316
+same sex marriage,0.0008919781575608288
+percent_highschool,0.0006468180226768965
+political correctness,0.0
+pronouns,0.0
+trader joe's,0.0
+percent_buildings_50+_units,0.0
+percent_native_am,0.0
+percent_commute_public_transport,0.0
+percent_buildings_20_49_units,0.0
+percent_buildings_10_19_units,0.0
+percent_associates,0.0
+median_age,0.0
+make america great again,0.0
+lululemon,0.0
+layoff,0.0
+job opportunities,0.0
+hashtag,0.0
+gun_searches,0.0
+getaway,0.0
+flight tickets,0.0
+wildfire,0.0
