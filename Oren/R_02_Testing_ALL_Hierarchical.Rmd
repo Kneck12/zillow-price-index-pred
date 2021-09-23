@@ -20,6 +20,8 @@ library(imputeTS)
 library(tidymodels)
 library(skimr)
 library(zoo)
+library(lubridate)
+library(lme4)
 ```
 
 
@@ -30,7 +32,7 @@ zri_df_og <-read_csv("../../data/HIER_zri_multifamily_v2.csv")
 ```{r}
 zri_df <- select(zri_df_og, -c('SizeRank', 'Metro')) 
 
-zri_df <- drop_na(zri_df)
+# zri_df <- drop_na(zri_df)
 
 zri_df_melted <- melt(zri_df, id.vars = c('zip', 'City', 'State',  'CountyName'))
 zri_df_melted
@@ -39,12 +41,16 @@ zri_df_full <-zri_df_melted %>%
   mutate(dates=ym(variable), Month_Yr = format_ISO8601(dates, precision = "ym")) %>%
   select(-variable) %>% rename(avg_rent = value) 
 
-zri_df_full <- zri_df_full %>% tsibble(dates = yearmonth(dates), index = dates)
+# zri_df_full <- zri_df_full %>% tsibble(dates = yearmonth(dates), index = dates)
 
 
 
-zri_df_full$ym <- yearmonth(zri_df_full$dates) %>%
-  select(-dates)
+zri_df_full$ym <- yearmonth(zri_df_full$dates) 
+
+
+
+# zri_df_full <- zri_df_ful %>%
+#   select(-dates)
 
 
 # zri_df_full <-zri_df_melted %>% 
@@ -52,7 +58,7 @@ zri_df_full$ym <- yearmonth(zri_df_full$dates) %>%
 #   select(-variable) %>% rename(avg_rent = value)
 
 
-zri_df_full %>% as_tsibble(key = c(zip)) 
+zri_df_full <- zri_df_full %>% as_tsibble(key = c(zip), index = c(ym)) 
 
 ```
 
@@ -65,6 +71,7 @@ zri_CA %>%
   group_by(City) %>%  slice(1)
 
 ```
+
 
 ```{r}
 zri_CA <- zri_CA %>% as_tsibble(key = c(zip)) %>% tsibble::fill_gaps()
@@ -79,8 +86,39 @@ zri_CA %>% as_tsibble() %>%
 ```
 
 
+
 ```{r}
-qplot(variable, value, data = zri_CA, geom = "line", group = CountyName) +
+
+zri_FL <- zri_df_full %>%
+  filter(State == "FL")
+
+zri_IL <- zri_df_full %>%
+  filter(State == "IL")
+
+zri_df %>%
+  group_by(State) %>% 
+  tally() #%>% filter(ym == "2015 Oct")
+
+zri_VA <- zri_df_full %>%
+  filter(State == "VA")
+
+
+zri_CA %>%
+  group_by(City) %>%  slice(1)
+
+zri_VA <- zri_VA %>% as_tsibble(key = c(zip)) %>% tsibble::fill_gaps()
+zri_VA %>% as_tsibble() %>%
+  ggplot2::autoplot(avg_rent)
+
+
+# zri_CA %>% group_by(zip) %>% na_interpolation(x)
+
+# ggplot(data = zri_CA, aes(x = date, y = avg_rent)) +
+#  geom_line(aes(color = CountyName), size = 1)
+```
+
+```{r}
+qplot(variable, value, data = zri_df_full, geom = "line", group = State) +
     facet_grid(variable ~ ., scale = "free_y") +
     theme_bw()
 
@@ -89,9 +127,9 @@ ggplotly()
 
 ```{r}
 
-CA_plot <- zri_CA %>% filter(zip == "90006" | zip == "90007") %>% filter_index(~"2018-12")
-CA_plot_full <- zri_CA %>% filter(zip == "90006" | zip == "90007")
-fit <- CA_plot %>%
+Full_plot <- zri_df_full %>% filter_index(~"2018-12")
+# CA_plot_full <- zri_CA %>% filter(zip == "90006" | zip == "90007")
+fit <- Full_plot %>%
   model(
     ets = ETS(avg_rent ~ trend("A")),
     arima = ARIMA(avg_rent)
@@ -117,14 +155,89 @@ fit %>%
 
 
 ```{r}
-fc <- fit_CA %>% filter(zip == "90006") %>%
+fc <- fit %>% filter(zip == "01013") %>%
   forecast(h = "1 year")
 fc
 ```
 
 ```{r}
-CA_plot_full <- zri_CA %>% filter(zip == "90006")
+zri_df_full_plot <- zri_df_full %>% filter(zip == "01013")
 fc %>%
-  autoplot(CA_plot_full)
+  autoplot(zri_df_full_plot)
 ```
+
+```{r}
+zri_AK <- zri_df_full %>%
+  filter(State == "AK")
+
+
+fit <- zri_AK %>%
+  model(nn = NNETAR(box_cox(avg_rent, 0.15)))
+
+
+fcast <- forecast(fit)
+
+fcast %>% autoplot(zri_AK)
+
+
+
+## Arguments can be passed to nnet()
+fit <- nnetar(zri_AK, decay=0.5, maxit=150)
+plot(forecast(fit))
+lines(zri_AK)
+
+## Fit model to first 100 years of lynx data
+fit <- nnetar(window(zri_AK,end=2018), decay=0.5, maxit=150)
+plot(forecast(fit,h=14))
+lines(zri_AK)
+
+## Apply fitted model to later data, including all optional arguments
+fit2 <- nnetar(window(zri_AK,start=2019), model=fit)
+```
+
+
+
+```{r}
+install.packages("timetk")
+library(timetk)
+```
+
+
+```{r}
+zri_AK %>%
+  plot_time_series(ym, avg_rent)
+```
+
+```{r}
+zri_full_data <- full_df
+zri_full_data_leveled <- zri_full_data %>%
+  aggregate_key((State/City/zip), mean_rent = mean(avg_rent))
+
+fit_zri_full_data_leveled <- zri_full_data_leveled %>%
+  filter_index(~"2018-01") %>%
+  model(ets = ETS(mean_rent ~ taxes))
+
+fc_zri_full_data_leveled <- fit_zri_full_data_leveled %>% forecast(h = "1 year")
+fc_zri_full_data_leveled
+
+
+zri_full_data <- full_df
+taxes_zri_full_data_leveled <- zri_full_data %>%
+  aggregate_key((State/City/zip), mean_rent = mean(avg_rent), taxes = mean(state_local_perc))
+
+taxes_fit_zri_full_data_leveled <- taxes_zri_full_data_leveled %>%
+  filter_index(~"2018-01") %>%
+  model(ets = ETS(mean_rent ~ taxes))
+
+taxes_fc_zri_full_data_leveled <- taxes_fit_zri_full_data_leveled %>% forecast(h = "1 year")
+taxes_fc_zri_full_data_leveled
+
+```
+
+
+```{r}
+taxes_fit_zri_full_data_leveled %>% report()
+```
+
+
 
